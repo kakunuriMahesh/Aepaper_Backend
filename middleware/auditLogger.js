@@ -2,20 +2,18 @@ const AuditLog = require('../models/AuditLog');
 
 const trackActivity = (actionType, collectionTarget) => {
   return (req, res, next) => {
+    let responseBody = null;
     const originalJson = res.json.bind(res);
 
     res.json = function (body) {
-      res.removeListener('finish', logActivity);
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        logActivity();
-      }
+      responseBody = body;
       return originalJson(body);
     };
 
     const logActivity = async () => {
       try {
         const targetId =
-          req.params.id || (body && body.data && body.data._id) || null;
+          req.params.id || (responseBody && responseBody.data && responseBody.data._id) || null;
 
         await AuditLog.create({
           publisherId: req.user?.publisherId || null,
@@ -34,11 +32,22 @@ const trackActivity = (actionType, collectionTarget) => {
       }
     };
 
-    res.on('finish', () => {
+    const onFinish = () => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
         logActivity();
       }
-    });
+    };
+
+    res.on('finish', onFinish);
+
+    const originalEnd = res.end.bind(res);
+    res.end = function (...args) {
+      res.removeListener('finish', onFinish);
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        logActivity();
+      }
+      return originalEnd(...args);
+    };
 
     next();
   };
