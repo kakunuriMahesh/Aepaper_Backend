@@ -1,0 +1,12 @@
+MongoDB Connected: mongodb://localhost:27017/admin_cms
+MongoDB Connected: localhost
+Server running on port 5000
+[0mGET /api/public/ads [32m200[0m 88.392 ms - 26[0m
+[0mGET /api/public/stats [32m200[0m 152.789 ms - 79[0m
+[0mGET /api/public/articles?page=1&limit=20 [32m200[0m 159.080 ms - 8041[0m
+[0mGET /api/public/site [32m200[0m 197.261 ms - 4894[0m
+[0mGET /api/public/today-paper [32m200[0m 181.034 ms - 623[0m
+[0mGET /api/public/ads [32m200[0m 22.330 ms - 26[0m
+[0mGET /api/public/today-paper [32m200[0m 35.265 ms - 623[0m
+[0mGET /api/public/articles?page=1&limit=20 [32m200[0m 49.355 ms - 8041[0m
+[0mGET /api/public/daily-papers?page=1&limit=50&date=2026-07-22 [32m200[0m 12.991 ms - 86[0m

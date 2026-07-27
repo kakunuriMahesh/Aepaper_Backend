@@ -3,7 +3,7 @@ const router = express.Router();
 const Publisher = require('../models/Publisher');
 const {
   resolvePublisher,
-  getPublisherData,
+  getSiteData,
   getArticles,
   getArticleById,
   getDailyPapers,
@@ -13,42 +13,30 @@ const {
   trackClick,
   getVisitorCount,
   getTodayPaper,
+  getLegalPage,
 } = require('../controllers/publicController');
-const LegalPage = require('../models/LegalPage');
 
 router.get('/publishers', async (req, res) => {
   try {
     const publishers = await Publisher.find({ status: { $in: ['ACTIVE', 'TRIAL'] } })
-      .select('name shortName customDomain themeColor logoUrl supportedLanguages')
-      .lean();
+      .select('name shortName customDomain themeColor logoUrl')
+      .sort({ name: 1 });
     return res.status(200).json({ success: true, data: publishers });
-  } catch (err) {
+  } catch (error) {
     return res.status(500).json({ success: false, message: 'Failed to fetch publishers' });
   }
 });
 
-router.use('/:domain', resolvePublisher);
-
-router.get('/:domain', getPublisherData);
-router.get('/:domain/articles', getArticles);
-router.get('/:domain/articles/:articleId', getArticleById);
-router.get('/:domain/daily-papers', getDailyPapers);
-router.get('/:domain/breaking-news', getBreakingNews);
-router.get('/:domain/ads', getAds);
-router.get('/:domain/today-paper', getTodayPaper);
-router.get('/:domain/stats', getVisitorCount);
-router.get('/:domain/legal/:type', async (req, res) => {
-  try {
-    const page = await LegalPage.findOne({ publisherId: req.publisherId, type: req.params.type });
-    if (!page) {
-      return res.status(200).json({ success: true, data: null });
-    }
-    return res.status(200).json({ success: true, data: page });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: 'Failed to fetch legal page' });
-  }
-});
-router.post('/:domain/ads/:adId/impression', trackImpression);
-router.post('/:domain/ads/:adId/click', trackClick);
+router.get('/:domain', resolvePublisher, getSiteData);
+router.get('/:domain/articles', resolvePublisher, getArticles);
+router.get('/:domain/articles/:articleId', resolvePublisher, getArticleById);
+router.get('/:domain/daily-papers', resolvePublisher, getDailyPapers);
+router.get('/:domain/breaking-news', resolvePublisher, getBreakingNews);
+router.get('/:domain/ads', resolvePublisher, getAds);
+router.get('/:domain/today-paper', resolvePublisher, getTodayPaper);
+router.get('/:domain/stats', resolvePublisher, getVisitorCount);
+router.get('/:domain/legal/:type', resolvePublisher, getLegalPage);
+router.post('/:domain/ads/:adId/impression', resolvePublisher, trackImpression);
+router.post('/:domain/ads/:adId/click', resolvePublisher, trackClick);
 
 module.exports = router;

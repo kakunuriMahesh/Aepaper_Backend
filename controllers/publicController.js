@@ -4,29 +4,46 @@ const Article = require('../models/Article');
 const Advertisement = require('../models/Advertisement');
 const DailyPaper = require('../models/DailyPaper');
 const BreakingNews = require('../models/BreakingNews');
+const LegalPage = require('../models/LegalPage');
 const { asyncHandler } = require('../utils/helpers');
 
 const resolvePublisher = asyncHandler(async (req, res, next) => {
-  const domain = req.params.domain;
-  const slug = domain.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-  const publisher = await Publisher.findOne({
+  if (req.publisherId && req.publisher) return next();
+  const domainParam = req.params.domain;
+  if (!domainParam) {
+    return res.status(400).json({ success: false, message: 'Domain parameter is required' });
+  }
+
+  const slug = domainParam.toLowerCase().trim();
+
+  let publisher = await Publisher.findOne({
     $or: [
-      { customDomain: domain },
       { customDomain: slug },
-      { $expr: { $eq: [{ $toLower: { $ifNull: ['$shortName', ''] } }, slug] } },
-      { $expr: { $eq: [{ $toLower: { $replaceAll: { input: { $ifNull: ['$name', ''] }, find: ' ', replacement: '-' } } }, slug] } },
+      { customDomain: domainParam },
+      { shortName: domainParam },
+      { shortName: slug },
     ],
     status: { $in: ['ACTIVE', 'TRIAL'] },
   });
+
   if (!publisher) {
-    return res.status(404).json({ success: false, message: 'Publisher not found' });
+    const allActive = await Publisher.find({ status: { $in: ['ACTIVE', 'TRIAL'] } });
+    publisher = allActive.find((p) => {
+      const s = (p.shortName || p.name || '').toLowerCase().replace(/\s+/g, '-');
+      return s === slug;
+    });
   }
+
+  if (!publisher) {
+    return res.status(404).json({ success: false, message: 'Publisher not found for this domain' });
+  }
+
   req.publisherId = publisher._id;
   req.publisher = publisher;
   next();
 });
 
-const getPublisherData = asyncHandler(async (req, res) => {
+const getSiteData = asyncHandler(async (req, res) => {
   const publisher = req.publisher;
 
   const [categories, activeAds, latestBreaking] = await Promise.all([
@@ -39,8 +56,7 @@ const getPublisherData = asyncHandler(async (req, res) => {
         { startDate: { $lte: new Date() }, endDate: { $gte: new Date() } },
         { startDate: { $lte: new Date() }, endDate: null },
       ],
-    })
-      .sort({ priority: -1 }),
+    }).sort({ priority: -1 }),
     BreakingNews.find({
       publisherId: publisher._id,
       status: 'ACTIVE',
@@ -240,9 +256,15 @@ const getTodayPaper = asyncHandler(async (req, res) => {
   return res.status(200).json({ success: true, data: paper });
 });
 
+const getLegalPage = asyncHandler(async (req, res) => {
+  const { type } = req.params;
+  const page = await LegalPage.findOne({ publisherId: req.publisherId, type });
+  return res.status(200).json({ success: true, data: page || null });
+});
+
 module.exports = {
   resolvePublisher,
-  getPublisherData,
+  getSiteData,
   getArticles,
   getArticleById,
   getDailyPapers,
@@ -252,4 +274,5 @@ module.exports = {
   trackClick,
   getVisitorCount,
   getTodayPaper,
+  getLegalPage,
 };
