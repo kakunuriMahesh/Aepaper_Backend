@@ -52,7 +52,7 @@ const register = asyncHandler(async (req, res) => {
   const token = generateToken(user);
   setTokenCookie(res, token);
 
-  return res.status(201).json({ success: true, data: user });
+  return res.status(201).json({ success: true, data: user, token });
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -81,7 +81,7 @@ const login = asyncHandler(async (req, res) => {
 
   const populatedUser = await User.findById(user._id).populate('publisherId');
 
-  return res.status(200).json({ success: true, data: populatedUser });
+  return res.status(200).json({ success: true, data: populatedUser, token });
 });
 
 const logout = asyncHandler(async (req, res) => {
