@@ -38,6 +38,7 @@ app.use(cors({
     process.env.WEB_URL || 'http://localhost:3000',
     'http://localhost:5173',
     'http://localhost:3000',
+    'https://epaper-web.vercel.app',
   ],
   credentials: true,
 }));
